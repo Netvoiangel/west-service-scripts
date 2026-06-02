@@ -1,4 +1,4 @@
-param(
+﻿param(
     [string]$HostName = "192.168.1.1",
     [string]$User = "root",
     [string]$ConfigPath = "/opt/mnt2/configurator/conf/HWMONITOR.json",
@@ -78,21 +78,35 @@ try {
     }
     Write-Log "SSH подключение проверено." "OK"
 
-    $rootInfoCommand = 'root_source=$(findmnt -n -o SOURCE /); root_real=$(readlink -f "$root_source" 2>/dev/null || printf "%s" "$root_source"); root_parent=$(lsblk -no PKNAME "$root_real" 2>/dev/null | head -n 1); if [ -n "$root_parent" ]; then printf "%s|%s" "$root_source" "$root_parent"; else printf "%s|%s" "$root_source" "$(basename "$root_real")"; fi'
-    $rootInfo = (Invoke-Remote -Command $rootInfoCommand).Output.Trim()
-    $rootParts = $rootInfo -split "\|", 2
-    $rootSource = $rootParts[0]
-    $systemDiskName = if ($rootParts.Count -gt 1) { $rootParts[1] } else { $null }
+    $lsblkJson = (Invoke-Remote -Command "lsblk -b -J -o NAME,KNAME,PATH,TYPE,UUID,MOUNTPOINT,SIZE,FSTYPE,PKNAME,MODEL,SERIAL").Output
+    $lsblk = $lsblkJson | ConvertFrom-Json
+    $devices = ConvertTo-FlatDeviceList -Devices @($lsblk.blockdevices)
+
+    $rootDevice = @($devices | Where-Object { $_.mountpoint -eq "/" } | Select-Object -First 1)
+    $rootSource = if ($rootDevice.Count -gt 0) { $rootDevice[0].path } else { (Invoke-Remote -Command "findmnt -n -o SOURCE /").Output.Trim() }
+
+    if ($rootDevice.Count -eq 0 -and $rootSource) {
+        $rootName = $rootSource -replace "^.*/", ""
+        $rootDevice = @($devices | Where-Object {
+            $_.path -eq $rootSource -or $_.name -eq $rootName -or $_.kname -eq $rootName
+        } | Select-Object -First 1)
+    }
+
+    $systemDiskName = if ($rootDevice.Count -gt 0 -and $rootDevice[0].pkname) {
+        $rootDevice[0].pkname
+    } elseif ($rootDevice.Count -gt 0 -and $rootDevice[0].parent) {
+        $rootDevice[0].parent
+    } elseif ($rootDevice.Count -gt 0) {
+        $rootDevice[0].name
+    } else {
+        $null
+    }
 
     if (-not $rootSource -or -not $systemDiskName) {
         throw "Не удалось определить устройство корневой файловой системы."
     }
 
     Write-Log "Системный диск определен как /dev/$systemDiskName через root=$rootSource."
-
-    $lsblkJson = (Invoke-Remote -Command "lsblk -b -J -o NAME,KNAME,PATH,TYPE,UUID,MOUNTPOINT,SIZE,FSTYPE,PKNAME,MODEL,SERIAL").Output
-    $lsblk = $lsblkJson | ConvertFrom-Json
-    $devices = ConvertTo-FlatDeviceList -Devices @($lsblk.blockdevices)
     $liveUuids = @($devices | Where-Object { $_.uuid } | ForEach-Object { [string]$_.uuid })
 
     Write-Log "Найдено UUID на устройстве: $($liveUuids.Count)."

@@ -1,4 +1,4 @@
-function ConvertTo-FlatDeviceList {
+﻿function ConvertTo-FlatDeviceList {
     param([object[]]$Devices)
 
     $items = New-Object System.Collections.Generic.List[object]

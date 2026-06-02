@@ -1,4 +1,4 @@
-$ErrorActionPreference = "Stop"
+﻿$ErrorActionPreference = "Stop"
 
 $RepoRoot = Split-Path -Parent $PSScriptRoot
 $ModulePath = Join-Path (Join-Path $RepoRoot "scripts") "MountHwmonitorDisk.psm1"
