@@ -34,13 +34,25 @@ ssh root@192.168.1.1
 - перезапускает `mnt-hwmonitor.service`;
 - пишет понятный лог в `logs/`.
 
-### Запуск
+### Запуск двойным кликом
+
+Для обычного запуска на Windows дважды нажмите:
+
+```text
+mount-hwmonitor-disk.cmd
+```
+
+Откроется окно терминала, скрипт начнет работу и будет задавать вопросы прямо в этом окне. После завершения окно не закроется сразу, чтобы можно было прочитать результат.
+
+### Запуск вручную
 
 Откройте PowerShell в папке репозитория и выполните:
 
 ```powershell
-.\scripts\mount-hwmonitor-disk.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\mount-hwmonitor-disk.ps1
 ```
+
+Прямой запуск `.\scripts\mount-hwmonitor-disk.ps1` может быть заблокирован политикой Windows. Параметр `-ExecutionPolicy Bypass` действует только на этот запуск и не меняет настройки системы.
 
 По умолчанию используется:
 
@@ -53,19 +65,19 @@ ssh root@192.168.1.1
 Запуск с другим адресом:
 
 ```powershell
-.\scripts\mount-hwmonitor-disk.ps1 -HostName 192.168.1.10
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\mount-hwmonitor-disk.ps1 -HostName 192.168.1.10
 ```
 
 Запуск с другим порогом размера:
 
 ```powershell
-.\scripts\mount-hwmonitor-disk.ps1 -MinDiskSizeGb 500
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\mount-hwmonitor-disk.ps1 -MinDiskSizeGb 500
 ```
 
 Пробный запуск без записи конфига, форматирования и перезапуска сервиса:
 
 ```powershell
-.\scripts\mount-hwmonitor-disk.ps1 -DryRun
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\mount-hwmonitor-disk.ps1 -DryRun
 ```
 
 ### Безопасность
@@ -93,8 +105,14 @@ ssh root@192.168.1.1
 
 Тесты не требуют дополнительных модулей PowerShell:
 
+```text
+run-tests.cmd
+```
+
+Или вручную:
+
 ```powershell
-.\tests\run-tests.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\tests\run-tests.ps1
 ```
 
 Они проверяют безопасный выбор archive mount-point, создание второго archive-блока и фильтрацию дисков-кандидатов.
